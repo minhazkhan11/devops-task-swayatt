@@ -2,55 +2,63 @@ pipeline {
     agent any
 
     environment {
-        AWS_DEFAULT_REGION = "us-east-1"
-        AWS_ACCOUNT_ID = "830389645667"
-        ECR_REPO = "swayatt"
-        IMAGE_TAG = "latest"
+        AWS_REGION = "us-east-1"
+        ECR_REPO = "830389645667.dkr.ecr.us-east-1.amazonaws.com/swayatt"
+        IMAGE_NAME = "devops-task"
+    }
+
+    triggers {
+        githubPush()   // triggers pipeline when code is pushed to GitHub
     }
 
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/minhazkhan11/devops-task-swayatt.git/',
+                    url: 'https://github.com/SwayattDrishtigochar/devops-task.git',
                     credentialsId: 'github-token'
-            }
-        }
-
-        stage('Login to AWS ECR') {
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
-                                  credentialsId: '0fc3bcd9-0d7f-4887-a662-0708b375fb9d']]) {
-                    sh '''
-                        aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
-                        docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-                    '''
-                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                    docker build -t $ECR_REPO:$IMAGE_TAG .
-                    docker tag $ECR_REPO:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
-                '''
+                script {
+                    sh '''
+                    echo "Logging into AWS ECR..."
+                    aws ecr get-login-password --region $AWS_REGION \
+                        | docker login --username AWS --password-stdin $ECR_REPO
+
+                    echo "Building Docker image..."
+                    docker build -t $IMAGE_NAME:latest .
+
+                    echo "Tagging Docker image..."
+                    docker tag $IMAGE_NAME:latest $ECR_REPO:latest
+                    '''
+                }
             }
         }
 
         stage('Push to ECR') {
             steps {
-                sh '''
-                    docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
-                '''
+                script {
+                    sh '''
+                    echo "Pushing Docker image to ECR..."
+                    docker push $ECR_REPO:latest
+                    '''
+                }
             }
         }
 
         stage('Deploy') {
             steps {
-                sh '''
-                    echo "Deployment step goes here (ECS, EKS, or Docker run)"
-                '''
+                script {
+                    sh '''
+                    echo "Deploy step placeholder - options:
+                    1. Run on ECS (Fargate or EC2).
+                    2. Run on EKS (Kubernetes).
+                    3. Or simple Docker run on EC2."
+                    '''
+                }
             }
         }
     }
