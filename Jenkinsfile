@@ -12,7 +12,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/minhazkhan11/devops-task-swayatt/',
+                    url: 'https://github.com/minhazkhan11/devops-task-swayatt.git/',
                     credentialsId: 'github-token'
             }
         }
